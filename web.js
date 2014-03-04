@@ -17,8 +17,8 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
+console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
-
 var ws = new WebSocket('ws://ws.blockchain.info/inv');
 ws.on('open', function() {
     console.log("Websocket opened");
@@ -35,8 +35,8 @@ ws.on('message', function(data, flags) {
     }
     if (message.op === "block") {
 	console.log("Got a block! Height: "+message.x.height);
-	console.log(message);
     } else if (message.op === "utx") {
+	console.log('Got new transaction!');
 	handleNewTransaction(message.x);
     } else {
 	console.log("Unknown!");
@@ -101,37 +101,8 @@ app.get('/', function(request, response) {
     response.send('OK!');
 });
 
-// app.post('/transaction', function(request, response) {
-//     var id = request.query.id;
-//     console.log(id);
-//     Venue.findOne({ token: id }, function(err, obj) {
-// 	if (obj) {
-// 	    var transaction = request.body;
-// 	    if (transaction.order) {
-// 		var order = transaction.order;
-// 		var btc = order.total_btc.cents / 1e8;
-// 		var fiat = order.total_native.cents / 100;
-// 		var fiatcode = order.total_native.currency_iso;
-// 		var id = order.id;
-
-// 		var message = createMessage(btc, fiat, fiatcode, id, obj);
-// 		console.log(message);
-// 		smtpTransport.sendMail(message, function(error, response){
-// 		    if(error){
-// 			console.log(error);
-// 		    }else{
-// 			console.log("Message sent: " + response.message);
-// 		    }
-// 		});
-// 	    }
-// 	    response.send('ok!');
-// 	} else {
-// 	    response.status(401).send('Not authorized');
-// 	}
-//     });
-// });
-
 var port = process.env.PORT || 3000;
 server.listen(port, function() {
   console.log("Listening on " + port);
 });
+
