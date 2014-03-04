@@ -1,0 +1,19 @@
+{
+  "name": "machinewatch",
+  "version": "0.1.0",
+  "description": "Bitcoin Vending Machine watcher",
+  "author": {
+    "name": "Gergely Imreh",
+    "email": "gergely@imreh.net"
+  },
+  "dependencies": {
+    "express": "~3.4.8",
+    "nodemailer": "~0.6.1",
+    "ws": "~0.4.31",
+    "ejs": "~0.8.5"
+  },
+  "engines": {
+    "node": "0.10.x",
+    "npm": "1.2.x"
+  }
+}
