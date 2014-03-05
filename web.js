@@ -84,9 +84,6 @@ ws.on('message', function(data, flags) {
 });
 
 var handleNewTransaction = function (tx) {
-    console.log(tx.hash);
-    console.log(tx.time);
-    console.log(tx.out);
     var message = createMessage(tx);
     console.log(message);
     smtpTransport.sendMail(message, function(error, response){
