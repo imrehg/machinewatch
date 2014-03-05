@@ -1,6 +1,7 @@
 var express = require('express')
   , ejs = require('ejs')
-  , WebSocket = require('ws');
+  , WebSocket = require('ws')
+  , request = require('request')
 ;
 
 // Email settings
@@ -14,6 +15,44 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
         pass: process.env.SMTPPASS
     }
 });
+
+var price = -1;
+var multiplier = 1.1;
+var updatePrice = function() {
+    var url = "https://www.bitstamp.net/api/ticker/";
+    request(url, function (error, response, body) {
+	if (!error && response.statusCode == 200) {
+	    try {
+		var ticker = JSON.parse(body);
+		price = parseFloat(ticker.last);
+		console.log("USD/BTC: "+price);
+	    } catch (e) {
+		console.log(e);
+	    }
+	}
+    });
+};
+updatePrice();
+setInterval(updatePrice, 10*60*1000); // run every 10 minutes
+
+var exchangeRate = 0;
+var updateExchangeRate = function() {
+    var url = "http://download.finance.yahoo.com/d/quotes.csv?e=.csv&f=sl1d1t1&s=TWD=X";
+    request(url, function (error, response, body) {
+	if (!error && response.statusCode == 200) {
+	    try {
+		var ticker = body.split(',');
+		exchangeRate = parseFloat(ticker[1]);
+		console.log("TWD/USD: "+exchangeRate);
+	    } catch (e) {
+		console.log(e);
+	    }
+	}
+    });
+};
+updateExchangeRate();
+setInterval(updateExchangeRate, 10*60*1000); // run every 10 minutes
+
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
@@ -66,9 +105,21 @@ var createMessage = function(tx) {
     var outs = tx.out;
     for (var index = 0; index < outs.length; index++) {
 	out = outs[index];
-	html = html + "<li><strong>"+out.addr+"</strong>: "+out.value/1e8+" BTC</li>";
+	var addr = out.addr
+          , valueBTC = out.value/1e8;
+	var valueFiat = "?";
+	var financeLog = '';
+	if ((price > 0) && (exchangeRate > 0)) {
+	    valueFiat = valueBTC * price * exchangeRate * multiplier;
+	    financeLog = "USD/BTC: "+price+", TWD/USD: "+exchangeRate+ "==> TWD/BTC: "+ price*exchangeRate;
+	    total = price*exchangeRate*multiplier;
+	    total = total.toFixed(2);
+	    financeLog = financeLog + "<br>Total probable displayed exchange rate TWD/BTC: " + total;
+	}
+	valueFiat = valueFiat.toFixed(2);
+	html = html + "<li><strong>"+addr+"</strong>: "+valueBTC+" BTC (~"+valueFiat+" TWD)</li>";
     }
-    html = html + "</ol>";
+    html = html + "</ol><br>(using multiplier "+multiplier+")<br>"+financeLog;
 
     var mailOptions = {
     	from: process.env.MAILFROM,
