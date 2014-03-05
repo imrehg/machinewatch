@@ -111,7 +111,7 @@ var createMessage = function(tx) {
 
     var time = moment(tx.time*1000).tz("Asia/Taipei").format();
 
-    var html = "<h2>Info<h2><ul><li>Time: "+time+"</li></ul>";
+    var html = "<h2>Info</h2><ul><li>Time: "+time+"</li></ul>";
     html = html + "<h2>Outputs:</h2><ol>";
     
     var outs = tx.out;
