@@ -3,6 +3,7 @@ var express = require('express')
   , WebSocket = require('ws')
   , request = require('request')
   , cheerio = require('cheerio')
+  , moment = require('moment-timezone')
 ;
 
 // Email settings
@@ -107,7 +108,11 @@ var handleNewTransaction = function (tx) {
 
 var createMessage = function(tx) {
     var subject = "Monitored Transaction"
-    var html = "<h2>Outputs:</h2><ol>";
+
+    var time = moment(tx.time*1000).tz("Asia/Taipei").format();
+
+    var html = "<h2>Info<h2><ul><li>Time: "+time+"</li></ul>";
+    html = html + "<h2>Outputs:</h2><ol>";
     
     var outs = tx.out;
     for (var index = 0; index < outs.length; index++) {
