@@ -58,7 +58,8 @@ var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
 console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
-var ws = new WebSocket('ws://ws.blockchain.info/inv');
+// var ws = new WebSocket('ws://ws.blockchain.info/inv');
+var ws = new WebSocket('ws://ws.blockchain.info:8335/inv');
 ws.on('open', function() {
     console.log("Websocket opened");
     ws.send(ws_ping_block);
