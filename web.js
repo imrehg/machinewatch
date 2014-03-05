@@ -109,7 +109,9 @@ var createMessage = function(tx) {
 	var financeLog = '';
 	if ((price > 0) && (exchangeRate > 0)) {
 	    valueFiat = valueBTC * price * exchangeRate * multiplier;
-	    financeLog = "USD/BTC: "+price+", TWD/USD: "+exchangeRate+ "==> TWD/BTC: "+ price*exchangeRate;
+	    totalExchange =  price*exchangeRate;
+	    totalExchange = totalExchange.toFixed(2);
+	    financeLog = "USD/BTC: "+price+", TWD/USD: "+exchangeRate+ "==> TWD/BTC: "+totalExchange;
 	    total = price*exchangeRate*multiplier;
 	    total = total.toFixed(2);
 	    financeLog = financeLog + "<br>Total probable displayed exchange rate TWD/BTC: " + total;
