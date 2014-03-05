@@ -66,6 +66,15 @@ ws.on('open', function() {
     ws.send(ws_addr_sub);
     // ws.send(ws_unconfirmed_sub);
 });
+
+var doPing = function() {
+    ws.ping();
+};
+setInterval(doPing, 2.5*60*1000); // send a ping every 2.5 minutes, try to keep websocket alive
+ws.on('pong', function(data, flags) {
+    console.log("PONG!");
+});
+
 ws.on('message', function(data, flags) {
     try {
 	var message = JSON.parse(data);
