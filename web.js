@@ -2,6 +2,7 @@ var express = require('express')
   , ejs = require('ejs')
   , WebSocket = require('ws')
   , request = require('request')
+  , cheerio = require('cheerio')
 ;
 
 // Email settings
@@ -16,43 +17,42 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
     }
 });
 
-var price = -1;
-var multiplier = 1.1;
-var updatePrice = function() {
-    var url = "https://www.bitstamp.net/api/ticker/";
-    request(url, function (error, response, body) {
-	if (!error && response.statusCode == 200) {
-	    try {
-		var ticker = JSON.parse(body);
-		price = parseFloat(ticker.last);
-		console.log("USD/BTC: "+price);
-	    } catch (e) {
-		console.log(e);
-	    }
-	}
-    });
-};
-updatePrice();
-setInterval(updatePrice, 10*60*1000); // run every 10 minutes
-
+var multiplier = 1.03;
 var exchangeRate = 0;
 var updateExchangeRate = function() {
-    var url = "http://download.finance.yahoo.com/d/quotes.csv?e=.csv&f=sl1d1t1&s=TWD=X";
+    var url = "https://bitpay.com/bitcoin-exchange-rates";
     request(url, function (error, response, body) {
 	if (!error && response.statusCode == 200) {
-	    try {
-		var ticker = body.split(',');
-		exchangeRate = parseFloat(ticker[1]);
-		console.log("TWD/USD: "+exchangeRate);
-	    } catch (e) {
-		console.log(e);
-	    }
+	    $ = cheerio.load(body);
+	    $('li.hidden-phone').each(function(i, element){
+		// var a = $(this).prev();
+		var item = $(this);
+		var parts = item.contents('div');
+		var thisone = false;
+		parts.each(function(i, element){
+		    var item = $(this);
+		    if (i == 5) {
+			var fiatCode = item.text().trim();
+			if (fiatCode == "TWD") {
+			    thisone = true;
+			}
+		    }
+		});
+		if (thisone) {
+		    try {
+			exchangeRate = parseFloat(parts.eq(3).text());
+			console.log("TWD/BTC: "+exchangeRate);
+		    } catch (e) {
+			console.log(e);
+		    }
+		    return false;  // breaking the .each loop
+		}
+	    });
 	}
     });
 };
 updateExchangeRate();
 setInterval(updateExchangeRate, 10*60*1000); // run every 10 minutes
-
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
@@ -116,17 +116,15 @@ var createMessage = function(tx) {
           , valueBTC = out.value/1e8;
 	var valueFiat = "?";
 	var financeLog = '';
-	if ((price > 0) && (exchangeRate > 0)) {
-	    valueFiat = valueBTC * price * exchangeRate * multiplier;
-	    totalExchange =  price*exchangeRate;
-	    totalExchange = totalExchange.toFixed(2);
-	    financeLog = "USD/BTC: "+price+", TWD/USD: "+exchangeRate+ "==> TWD/BTC: "+totalExchange;
-	    total = price*exchangeRate*multiplier;
-	    total = total.toFixed(2);
+	if (exchangeRate > 0) {
+	    valueFiat = valueBTC * exchangeRate * multiplier;
+	    valueFiat = valueFiat.toFixed(2);  // truncate to cents
+	    financeLog = "TWD/BTC: "+exchangeRate;
+	    total = exchangeRate*multiplier;
+	    total = total.toFixed(4);  // truncate to 4 digits, as done on BitPay
 	    financeLog = financeLog + "<br>Total probable displayed exchange rate TWD/BTC: " + total;
 	}
-	valueFiat = valueFiat.toFixed(2);
-	html = html + "<li><strong>"+addr+"</strong>: "+valueBTC+" BTC (~"+valueFiat+" TWD)</li>";
+	html = html + "<li><strong>"+addr+"</strong>: "+valueBTC+" BTC ("+valueFiat+" TWD)</li>";
     }
     html = html + "</ol><br>(using multiplier "+multiplier+")<br>"+financeLog;
 
