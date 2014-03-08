@@ -21,35 +21,18 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
 var multiplier = 1.03;
 var exchangeRate = 0;
 var updateExchangeRate = function() {
-    var url = "https://bitpay.com/bitcoin-exchange-rates";
-    request(url, function (error, response, body) {
+    var ratesApiUrl = "https://bitpay.com/api/rates";
+    request(ratesApiUrl, function (error, response, body) {
 	if (!error && response.statusCode == 200) {
-	    $ = cheerio.load(body);
-	    $('li.hidden-phone').each(function(i, element){
-		// var a = $(this).prev();
-		var item = $(this);
-		var parts = item.contents('div');
-		var thisone = false;
-		parts.each(function(i, element){
-		    var item = $(this);
-		    if (i == 5) {
-			var fiatCode = item.text().trim();
-			if (fiatCode == "TWD") {
-			    thisone = true;
-			}
-		    }
-		});
-		if (thisone) {
-		    try {
-			exchangeRate = parseFloat(parts.eq(3).text());
-			console.log("TWD/BTC: "+exchangeRate);
-		    } catch (e) {
-			console.log(e);
-		    }
-		    return false;  // breaking the .each loop
-		}
-	    });
-	}
+	    var ratesResponse = JSON.parse(body);
+	    for (index in ratesResponse) {
+		var currency = ratesResponse[index];
+		if (currency.code === "TWD") {
+		    exchangeRate = currency.rate;
+		    return false;
+		};
+	    };
+	};
     });
 };
 updateExchangeRate();
