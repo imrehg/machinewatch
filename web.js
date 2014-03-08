@@ -117,6 +117,7 @@ var getUnspent = function(address) {
 }
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
+var ws_block_sub = JSON.stringify({"op":"blocks_sub"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress.getAddress() });
 console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
@@ -125,6 +126,7 @@ var ws = new WebSocket('ws://ws.blockchain.info:8335/inv');
 ws.on('open', function() {
     console.log("Websocket opened");
     ws.send(ws_ping_block);
+    ws.send(ws_block_sub);
     ws.send(ws_addr_sub);
     // ws.send(ws_unconfirmed_sub);
 });
