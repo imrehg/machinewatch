@@ -149,8 +149,7 @@ ws.on('open', function() {
     console.log("Websocket opened");
     ws.send(ws_ping_block);
     ws.send(ws_block_sub);
-    ws.send(ws_addr_sub);
-    // ws.send(ws_unconfirmed_sub);
+    ws.send(ws_unconfirmed_sub);
 });
 
 var doPing = function() {
