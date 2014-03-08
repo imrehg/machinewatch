@@ -15,7 +15,8 @@
     "cheerio": "~0.13.1",
     "moment": "~2.5.1",
     "moment-timezone": "0.0.3",
-    "nconf": "~0.6.9"
+    "nconf": "~0.6.9",
+    "edit-google-spreadsheet": "~0.2.4"
   },
   "engines": {
     "node": "0.10.x",

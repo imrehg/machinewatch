@@ -6,6 +6,7 @@ var express = require('express')
   , moment = require('moment-timezone')
   , fs = require('fs')
   , nconf = require('nconf')
+  , Spreadsheet = require('edit-google-spreadsheet')
 ;
 
 // Load configuration
@@ -21,7 +22,10 @@ nconf.defaults({
     'MAILFROM': '',
     'MAILTO': '',
     'MULTIPLIER': 1.0,
-    'BITCOINADDRESS': '1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp'
+    'BITCOINADDRESS': '1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp',
+    'SPREADSHEET': '',
+    'GOAUTHEMAIL': '',
+    'PEM_KEY': ''
 });
 
 // Email settings
@@ -138,6 +142,53 @@ var getUnspent = function(address) {
     });
 }
 
+/**
+ * Google Spreadsheet setup
+ */
+var accountingSheet;
+Spreadsheet.load({
+    debug: true,
+    spreadsheetId: nconf.get('SPREADSHEET'),
+    worksheetId: 'od6',
+
+    oauth : {
+        email: nconf.get('GOAUTHEMAIL'),
+        key: nconf.get('PEM_KEY')
+    }
+
+}, function sheetReady(err, spreadsheet) {
+    if (err) {
+        throw err;
+    }
+    accountingSheet = spreadsheet;
+});
+var updateSpreadsheet = function(accounting) {
+    accountingSheet.receive(function(err, rows, info) {
+        if (err) {
+            throw err;
+        }
+    	var nextData = {}
+    	nextData[info.nextRow] = [[accounting.date,
+				   accounting.tx,
+				   accounting.balanceChange,
+				   accounting.balance,
+				   accounting.baseExchange,
+				   accounting.multipltier,
+				   accounting.effectiveExchange,
+				   accounting.fiat,
+				   accounting.spendable,
+				   accounting.unspendable
+				  ]];
+    	accountingSheet.add(nextData);
+    	accountingSheet.send(function(err, rows, info) {
+            if (err) {
+    		throw err;
+            }
+    	});
+    });
+}
+
+
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_block_sub = JSON.stringify({"op":"blocks_sub"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress.getAddress() });
@@ -182,23 +233,26 @@ var handleNewTransaction = function (tx) {
     var message = createMessage(tx);
     if (message) {
 	console.log(message);
-    }
-    // smtpTransport.sendMail(message, function(error, response){
-    // 	if(error){
-    // 	    console.log(error);
-    // 	}else{
-    // 	    console.log("Message sent: " + response.message);
-    // 	}
-    // });
+	smtpTransport.sendMail(message, function(error, response){
+    	    if(error){
+    		console.log(error);
+    	    }else{
+    		console.log("Message sent: " + response.message);
+    	    }
+	});
+   }
 }
 
 var createMessage = function(tx) {
+    var time = moment(tx.time*1000).tz("Asia/Taipei").format();
+
     var ins = tx.inputs;
     var outs = tx.out;
     var myin = 0;
     var myinval = 0;
     var myout = 0;
     var myoutval = 0;
+    var otherout = 0;
     for (i in ins) {
 	var coin = ins[i].prev_out;
 	if (coin.addr == bitcoinAddress.getAddress()) {
@@ -211,6 +265,8 @@ var createMessage = function(tx) {
 	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myout = myout + 1;
 	    myoutval += coin.value;
+	} else {
+	    otherout += coin.value;
 	}
     }
     if ((myin == 0) && (myout == 0)) {
@@ -227,30 +283,32 @@ var createMessage = function(tx) {
     console.log("Estimated coins (spend/unspend): ");
     console.log(approx);
 
-    var subject = "Monitored Transaction"
-    var time = moment(tx.time*1000).tz("Asia/Taipei").format();
+    var balanceChange = (myoutval - myinval) / 1e8
+    var fiatout = payoutTx ? (Math.round(otherout/1e8*exchangeRate*multiplier/100) * 100) : 0;
+    var approxBalance = approx.spendable.value + approx.unspendable.value;
+    var accounting = {'date': time,
+		      'tx': tx.hash,
+		      'balanceChange': balanceChange,
+		      'balance': approxBalance,
+		      'baseExchange': exchangeRate,
+		      'multipltier': multiplier,
+		      'effectiveExchange': multiplier * exchangeRate,
+		      'fiat': fiatout,
+		      'spendable': approx.spendable.count,
+		      'unspendable': approx.unspendable.count
+		     };
+    updateSpreadsheet(accounting);
 
-    var html = "<h2>Info</h2><ul><li>Time: "+time+"</li></ul>";
-    html = html + "<h2>Outputs:</h2><ol>";
-    
-    var outs = tx.out;
-    for (var index = 0; index < outs.length; index++) {
-	out = outs[index];
-	var addr = out.addr
-          , valueBTC = out.value/1e8;
-	var valueFiat = "?";
-	var financeLog = '';
-	if (exchangeRate > 0) {
-	    valueFiat = valueBTC * exchangeRate * multiplier;
-	    valueFiat = valueFiat.toFixed(2);  // truncate to cents
-	    financeLog = "TWD/BTC: "+exchangeRate;
-	    total = exchangeRate*multiplier;
-	    total = total.toFixed(4);  // truncate to 4 digits, as done on BitPay
-	    financeLog = financeLog + "<br>Total probable displayed exchange rate TWD/BTC: " + total;
-	}
-	html = html + "<li><strong>"+addr+"</strong>: "+valueBTC+" BTC ("+valueFiat+" TWD)</li>";
-    }
-    html = html + "</ol><br>(using multiplier "+multiplier+")<br>"+financeLog;
+    var subject = "Monitored Transaction"
+
+    var html = "<h2>Info</h2><ul><li>Time: "+time+"</li>";
+    html += "<li>Transaction: <a href=http://blockchain.info/tx/"+tx.hash+">"+tx.hash+"</a></li>";
+    html += "<li>Balance change (BTC): "+balanceChange+"</li>";
+    html += "<li>Balance change (BTC, approx): "+approxBalance+"</li>";
+    html += "<li>Effective exchange rate (TWD/BTC): "+(multiplier*exchangeRate)+"</li>";
+    html += "<li>Expected fiat (TWD): "+fiatout+"</li>";
+    html += "<li>Coins (spendable/unspendable): "+approx.spendable.count+"/"+approx.unspendable.count+"</li>";
+    html += "</ul>";
 
     var mailOptions = {
     	from: nconf.get('MAILFROM'),
