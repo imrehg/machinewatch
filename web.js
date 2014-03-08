@@ -66,6 +66,10 @@ function BitcoinAddress(address) {
     this.spendableValue = 0;
     this.unspendableCount = 0;
     this.unspendableValue = 0;
+    this.pendingSpendableCount = 0;
+    this.pendingSpendableValue = 0;
+    this.pendingUnspendableCount = 0;
+    this.pendingUnspendableValue = 0;
 }
 BitcoinAddress.prototype.getCoinValue = function () {
     return {'spendable': this.spendableValue, 'unspendable': this.unspendableValue};
@@ -76,6 +80,10 @@ BitcoinAddress.prototype.setCoins = function(coins) {
     this.spendableValue = 0;
     this.unspendableCount = 0;
     this.unspendableValue = 0;
+    this.pendingSpendableCount = 0;
+    this.pendingSpendableValue = 0;
+    this.pendingUnspendableCount = 0;
+    this.pendingUnspendableValue = 0;
     for (i in this.coins) {
 	var coin = this.coins[i];
 	if (coin.confirmations > 1) {
@@ -99,7 +107,21 @@ BitcoinAddress.prototype.getSpendable = function() {
 BitcoinAddress.prototype.getUnspendable = function() {
     return {'value': this.unspendableValue, 'count': this.unspendableCount};
 }
-
+BitcoinAddress.prototype.addPending = function(spentCount, spentValue, receivedCount, receivedValue) {
+    this.pendingSpendableCount += spentCount;
+    this.pendingSpendableValue += spentValue;
+    this.pendingUnspendableCount += receivedCount;
+    this.pendingUnspendableValue += receivedValue;
+}
+BitcoinAddress.prototype.getApprox = function() {
+    return {'spendable': {'value': this.spendableValue - this.pendingSpendableValue,
+			  'count': this.spendableCount - this.pendingSpendableCount
+			 },
+	    'unspendable': {'value': this.unspendableValue + this.pendingUnspendableValue,
+			    'count': this.unspendableCount + this.pendingUnspendableCount
+			   }
+	   }
+}
 
 bitcoinAddress = new BitcoinAddress(nconf.get('BITCOINADDRESS'));
 
@@ -150,58 +172,64 @@ ws.on('message', function(data, flags) {
 	console.log("Got a block! Height: "+message.x.height);
 	getUnspent(bitcoinAddress);
     } else if (message.op === "utx") {
-	console.log('Got new transaction!');
 	handleNewTransaction(message.x);
     } else {
-	console.log("Unknown!");
-	console.log(message);
+    	console.log("Unknown!");
+    	console.log(message);
     }
 });
 
 var handleNewTransaction = function (tx) {
     var message = createMessage(tx);
-    console.log(message);
-    smtpTransport.sendMail(message, function(error, response){
-	if(error){
-	    console.log(error);
-	}else{
-	    console.log("Message sent: " + response.message);
-	}
-    });
+    if (message) {
+	console.log(message);
+    }
+    // smtpTransport.sendMail(message, function(error, response){
+    // 	if(error){
+    // 	    console.log(error);
+    // 	}else{
+    // 	    console.log("Message sent: " + response.message);
+    // 	}
+    // });
 }
 
 var createMessage = function(tx) {
-    var subject = "Monitored Transaction"
-
-    var time = moment(tx.time*1000).tz("Asia/Taipei").format();
-
     var ins = tx.inputs;
     var outs = tx.out;
     var myin = 0;
+    var myinval = 0;
     var myout = 0;
+    var myoutval = 0;
     for (i in ins) {
 	var coin = ins[i].prev_out;
 	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myin = myin + 1;
+	    myinval += coin.value;
 	}
     }
     for (i in outs) {
 	var coin = outs[i];
 	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myout = myout + 1;
+	    myoutval += coin.value;
 	}
     }
-    console.log('Destroyed own coins: '+myin);
-    console.log('Received own coins: '+myout);
+    if ((myin == 0) && (myout == 0)) {
+	return;  // not our transaction
+    }
     // was it a pay-in or pay-out?
     var payoutTx = false;  // pay in
     if (myin > 0) {
 	payoutTx = true;
     }
     console.log("Payout? "+payoutTx);
-    var spendable = bitcoinAddress.getSpendable().count - myin;
-    var unspendable = bitcoinAddress.getUnspendable().count + myout;
-    console.log("Estimated coins (spend/unspend): "+spendable+"/"+unspendable);
+    bitcoinAddress.addPending(myin, myinval, myout, myoutval);
+    var approx = bitcoinAddress.getApprox();
+    console.log("Estimated coins (spend/unspend): ");
+    console.log(approx);
+
+    var subject = "Monitored Transaction"
+    var time = moment(tx.time*1000).tz("Asia/Taipei").format();
 
     var html = "<h2>Info</h2><ul><li>Time: "+time+"</li></ul>";
     html = html + "<h2>Outputs:</h2><ol>";
