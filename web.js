@@ -115,8 +115,6 @@ var getUnspent = function(address) {
 	console.log(address.getUnspendable());
     });
 }
-getUnspent(bitcoinAddress);
-
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress.getAddress() });
