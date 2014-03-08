@@ -4,22 +4,42 @@ var express = require('express')
   , request = require('request')
   , cheerio = require('cheerio')
   , moment = require('moment-timezone')
+  , fs = require('fs')
+  , nconf = require('nconf')
 ;
+
+// Load configuration
+nconf.argv()
+    .env()
+    .file({ file: 'config.json' });
+
+nconf.defaults({
+    'SMTPSERVER': '',
+    'SMTPPORT': 0,
+    'SMTPUSER': '',
+    'SMTPPASS': '',
+    'MAILFROM': '',
+    'MAILTO': '',
+    'MULTIPLIER': 1.0,
+    'BITCOINADDRESS': '1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp'
+});
+
+bitcoinAddress = nconf.get('BITCOINADDRESS');
 
 // Email settings
 var nodemailer = require("nodemailer");
 // create reusable transport method (opens pool of SMTP connections)
 var smtpTransport = nodemailer.createTransport("SMTP",{
-    host: process.env.SMTPSERVER,
-    port: process.env.SMTPPORT,
+    host: nconf.get('SMTPSERVER'),
+    port: nconf.get('SMTPPORT'),
     auth: {
-        user: process.env.SMTPUSER,
-        pass: process.env.SMTPPASS
+        user: nconf.get('SMTPUSER'),
+        pass: nconf.get('SMTPPASS')
     }
 });
 
-var multiplier = 1.03;
-var exchangeRate = 0;
+multiplier = nconf.get('MULTIPLIER');
+exchangeRate = 0;
 /**
  * Update gloabal exchange rate from BitPay
  */
@@ -42,7 +62,7 @@ updateExchangeRate();
 setInterval(updateExchangeRate, 1*60*1000); // run every 1 minute
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
-var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
+var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress });
 console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
 // var ws = new WebSocket('ws://ws.blockchain.info/inv');
@@ -120,8 +140,8 @@ var createMessage = function(tx) {
     html = html + "</ol><br>(using multiplier "+multiplier+")<br>"+financeLog;
 
     var mailOptions = {
-    	from: process.env.MAILFROM,
-    	to: process.env.MAILTO,
+    	from: nconf.get('MAILFROM'),
+    	to: nconf.get('MAILTO'),
     	subject: subject,
     	html: html
     }
@@ -143,7 +163,7 @@ app.use(express.logger());
 app.use(express.static('public'));
 app.use(express.bodyParser());
 app.use(express.cookieParser());
-app.use(express.session({secret: process.env.SESSION_SECRET || 'akjsfkjs345$%VFDVGT%'}));
+app.use(express.session({secret: nconf.get('SESSION_SECRET') || 'akjsfkjs345$%VFDVGT%'}));
 app.use(express.errorHandler());
 
 app.get('/', function(request, response) {
