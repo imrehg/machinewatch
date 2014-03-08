@@ -181,13 +181,13 @@ var createMessage = function(tx) {
     var myout = 0;
     for (i in ins) {
 	var coin = ins[i].prev_out;
-	if (coin.addr == bitcoinAddress) {
+	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myin = myin + 1;
 	}
     }
     for (i in outs) {
 	var coin = outs[i];
-	if (coin.addr == bitcoinAddress) {
+	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myout = myout + 1;
 	}
     }
