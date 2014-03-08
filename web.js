@@ -24,8 +24,6 @@ nconf.defaults({
     'BITCOINADDRESS': '1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp'
 });
 
-bitcoinAddress = nconf.get('BITCOINADDRESS');
-
 // Email settings
 var nodemailer = require("nodemailer");
 // create reusable transport method (opens pool of SMTP connections)
@@ -61,8 +59,67 @@ var updateExchangeRate = function() {
 updateExchangeRate();
 setInterval(updateExchangeRate, 1*60*1000); // run every 1 minute
 
+function BitcoinAddress(address) {
+    this.address = address;
+    this.coins = [];
+    this.spendableCount = 0;
+    this.spendableValue = 0;
+    this.unspendableCount = 0;
+    this.unspendableValue = 0;
+}
+BitcoinAddress.prototype.getCoinValue = function () {
+    return {'spendable': this.spendableValue, 'unspendable': this.unspendableValue};
+};
+BitcoinAddress.prototype.setCoins = function(coins) {
+    this.coins = coins;
+    this.spendableCount = 0;
+    this.spendableValue = 0;
+    this.unspendableCount = 0;
+    this.unspendableValue = 0;
+    for (i in this.coins) {
+	var coin = this.coins[i];
+	if (coin.confirmations > 1) {
+	    this.spendableValue += coin.value;
+	    this.spendableCount += 1;
+	} else {
+	    this.unspendableValue += coin.value;
+	    this.unspendableCount += 1;
+	}
+    };
+}
+BitcoinAddress.prototype.getCoinsNum = function() {
+    return this.coins.length;
+}
+BitcoinAddress.prototype.getAddress = function() {
+    return this.address;
+}
+BitcoinAddress.prototype.getSpendable = function() {
+    return {'value': this.spendableValue, 'count': this.spendableCount};
+}
+BitcoinAddress.prototype.getUnspendable = function() {
+    return {'value': this.unspendableValue, 'count': this.unspendableCount};
+}
+
+
+bitcoinAddress = new BitcoinAddress(nconf.get('BITCOINADDRESS'));
+
+var getUnspent = function(address) {
+    var url = "http://blockchain.info/unspent?active="+address.getAddress();
+    request(url, function(error, response, body) {
+	if (!error && response.statusCode == 200) {
+	    var unspent = JSON.parse(body).unspent_outputs;
+	    address.setCoins(unspent);
+	}
+	console.log('Total unspent for '+address.getAddress()+': '+address.getCoinsNum());
+	console.log(address.getSpendable());
+	console.log(address.getUnspendable());
+    });
+}
+getUnspent(bitcoinAddress);
+
+
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
-var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress });
+var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress.getAddress() });
 console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
 // var ws = new WebSocket('ws://ws.blockchain.info/inv');
@@ -91,6 +148,7 @@ ws.on('message', function(data, flags) {
     }
     if (message.op === "block") {
 	console.log("Got a block! Height: "+message.x.height);
+	getUnspent(bitcoinAddress);
     } else if (message.op === "utx") {
 	console.log('Got new transaction!');
 	handleNewTransaction(message.x);
@@ -116,6 +174,34 @@ var createMessage = function(tx) {
     var subject = "Monitored Transaction"
 
     var time = moment(tx.time*1000).tz("Asia/Taipei").format();
+
+    var ins = tx.inputs;
+    var outs = tx.out;
+    var myin = 0;
+    var myout = 0;
+    for (i in ins) {
+	var coin = ins[i].prev_out;
+	if (coin.addr == bitcoinAddress) {
+	    myin = myin + 1;
+	}
+    }
+    for (i in outs) {
+	var coin = outs[i];
+	if (coin.addr == bitcoinAddress) {
+	    myout = myout + 1;
+	}
+    }
+    console.log('Destroyed own coins: '+myin);
+    console.log('Received own coins: '+myout);
+    // was it a pay-in or pay-out?
+    var payoutTx = false;  // pay in
+    if (myin > 0) {
+	payoutTx = true;
+    }
+    console.log("Payout? "+payoutTx);
+    var spendable = bitcoinAddress.getSpendable().count - myin;
+    var unspendable = bitcoinAddress.getUnspendable().count + myout;
+    console.log("Estimated coins (spend/unspend): "+spendable+"/"+unspendable);
 
     var html = "<h2>Info</h2><ul><li>Time: "+time+"</li></ul>";
     html = html + "<h2>Outputs:</h2><ol>";
