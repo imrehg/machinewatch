@@ -11,8 +11,8 @@ going in or out of the machine. The wallet is on Blockchain.info
 
 ## Actionable
 
-[ ] move to Bitpay price API (instead of scraping)
-[ ] correctly identify incoming and outgoing transactions
-[ ] account for number of spendable coins
-[ ] write incoming results into Google Spreadsheet for accounting
+- [ ] move to Bitpay price API (instead of scraping)
+- [ ] correctly identify incoming and outgoing transactions
+- [ ] account for number of spendable coins
+- [ ] write incoming results into Google Spreadsheet for accounting
 
