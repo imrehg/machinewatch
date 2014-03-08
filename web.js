@@ -39,7 +39,7 @@ var updateExchangeRate = function() {
     });
 };
 updateExchangeRate();
-setInterval(updateExchangeRate, 10*60*1000); // run every 10 minutes
+setInterval(updateExchangeRate, 1*60*1000); // run every 1 minute
 
 var ws_ping_block = JSON.stringify({"op": "ping_block"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": process.env.MONITOR });
