@@ -20,6 +20,9 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
 
 var multiplier = 1.03;
 var exchangeRate = 0;
+/**
+ * Update gloabal exchange rate from BitPay
+ */
 var updateExchangeRate = function() {
     var ratesApiUrl = "https://bitpay.com/api/rates";
     request(ratesApiUrl, function (error, response, body) {
