@@ -176,6 +176,7 @@ var updateSpreadsheet = function(accounting) {
 				   accounting.multipltier,
 				   accounting.effectiveExchange,
 				   accounting.fiat,
+				   accounting.fee,
 				   accounting.spendable,
 				   accounting.unspendable
 				  ]];
@@ -253,12 +254,15 @@ var createMessage = function(tx) {
     var myout = 0;
     var myoutval = 0;
     var otherout = 0;
+    var totalin = 0;
+    var totalout = 0;
     for (i in ins) {
 	var coin = ins[i].prev_out;
 	if (coin.addr == bitcoinAddress.getAddress()) {
 	    myin = myin + 1;
 	    myinval += coin.value;
 	}
+	totalin += coin.value;
     }
     for (i in outs) {
 	var coin = outs[i];
@@ -268,6 +272,7 @@ var createMessage = function(tx) {
 	} else {
 	    otherout += coin.value;
 	}
+	totalout += coin.value;
     }
     if ((myin == 0) && (myout == 0)) {
 	return;  // not our transaction
@@ -285,29 +290,34 @@ var createMessage = function(tx) {
 
     var balanceChange = (myoutval - myinval) / 1e8
     var fiatout = payoutTx ? (Math.round(otherout/1e8*exchangeRate*multiplier/100) * 100) : 0;
-    var approxBalance = approx.spendable.value + approx.unspendable.value;
+    var fee = payouTx ? ((totalin - totalout) / 1e8) : 0;
+    var approxBalance = (approx.spendable.value + approx.unspendable.value) / 1e8;
+    var effectiveExchange = multiplier * exchangeRate;
+    effectiveExchange = effectiveRate.toFixed(4);
     var accounting = {'date': time,
 		      'tx': tx.hash,
 		      'balanceChange': balanceChange,
 		      'balance': approxBalance,
 		      'baseExchange': exchangeRate,
 		      'multipltier': multiplier,
-		      'effectiveExchange': multiplier * exchangeRate,
+		      'effectiveExchange': effectiveExchange,
 		      'fiat': fiatout,
 		      'spendable': approx.spendable.count,
-		      'unspendable': approx.unspendable.count
+		      'unspendable': approx.unspendable.count,
+		      'fee': fee
 		     };
     updateSpreadsheet(accounting);
 
-    var subject = "Monitored Transaction"
+    var subject = "Vending Machine Transaction"
 
     var html = "<h2>Info</h2><ul><li>Time: "+time+"</li>";
     html += "<li>Transaction: <a href=http://blockchain.info/tx/"+tx.hash+">"+tx.hash+"</a></li>";
     html += "<li>Balance change (BTC): "+balanceChange+"</li>";
     html += "<li>Balance change (BTC, approx): "+approxBalance+"</li>";
-    html += "<li>Effective exchange rate (TWD/BTC): "+(multiplier*exchangeRate)+"</li>";
+    html += "<li>Effective exchange rate (TWD/BTC): "+effectiveExchange+"</li>";
     html += "<li>Expected fiat (TWD): "+fiatout+"</li>";
     html += "<li>Coins (spendable/unspendable): "+approx.spendable.count+"/"+approx.unspendable.count+"</li>";
+    html += "<li>Miner fee (BTC): "+fee+"</li>";
     html += "</ul>";
 
     var mailOptions = {
