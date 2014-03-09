@@ -12,7 +12,11 @@ going in or out of the machine. The wallet is on Blockchain.info
 ## Actionable
 
 - [X] move to Bitpay price API (instead of scraping)
-- [ ] correctly identify incoming and outgoing transactions
-- [ ] account for number of spendable coins
-- [ ] write incoming results into Google Spreadsheet for accounting
+- [X] correctly identify incoming and outgoing transactions
+- [X] account for number of spendable coins
+- [X] write incoming results into Google Spreadsheet for accounting
 
+## Notes
+
+To add the certificate into the environment variable: need to run
+`heroku config:set PEM_KEY="`cat /path/to/your_key.pem`"`
