@@ -293,7 +293,7 @@ var createMessage = function(tx) {
     var fee = payoutTx ? ((totalin - totalout) / 1e8) : 0;
     var approxBalance = (approx.spendable.value + approx.unspendable.value) / 1e8;
     var effectiveExchange = multiplier * exchangeRate;
-    effectiveExchange = effectiveRate.toFixed(4);
+    effectiveExchange = effectiveExchange.toFixed(4);
     var accounting = {'date': time,
 		      'tx': tx.hash,
 		      'balanceChange': balanceChange,
