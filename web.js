@@ -290,7 +290,7 @@ var createMessage = function(tx) {
 
     var balanceChange = (myoutval - myinval) / 1e8
     var fiatout = payoutTx ? (Math.round(otherout/1e8*exchangeRate*multiplier/100) * 100) : 0;
-    var fee = payouTx ? ((totalin - totalout) / 1e8) : 0;
+    var fee = payoutTx ? ((totalin - totalout) / 1e8) : 0;
     var approxBalance = (approx.spendable.value + approx.unspendable.value) / 1e8;
     var effectiveExchange = multiplier * exchangeRate;
     effectiveExchange = effectiveRate.toFixed(4);
