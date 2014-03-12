@@ -161,6 +161,17 @@ Spreadsheet.load({
         throw err;
     }
     accountingSheet = spreadsheet;
+
+    // access the accounting sheet repeatedly, so the access token is kept fresh
+    setInterval( function() {
+	accountingSheet.receive(function(err, rows, info) {
+            if (err) {
+		throw err;
+            }
+	});
+    },
+     15 * 60 * 1000    // every 15 minutes
+    );
 });
 var updateSpreadsheet = function(accounting) {
     accountingSheet.receive(function(err, rows, info) {
