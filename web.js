@@ -170,7 +170,7 @@ Spreadsheet.load({
             }
 	});
     },
-     15 * 60 * 1000    // every 15 minutes
+     5 * 60 * 1000    // every 15 minutes
     );
 });
 var updateSpreadsheet = function(accounting) {
