@@ -146,33 +146,29 @@ var getUnspent = function(address) {
  * Google Spreadsheet setup
  */
 var accountingSheet;
-Spreadsheet.load({
-    debug: true,
-    spreadsheetId: nconf.get('SPREADSHEET'),
-    worksheetId: 'od6',
+var spreadsheetLoad = function(callback) {
+    Spreadsheet.load({
+	debug: true,
+	spreadsheetId: nconf.get('SPREADSHEET'),
+	worksheetId: 'od6',
 
-    oauth : {
-        email: nconf.get('GOAUTHEMAIL'),
-        key: nconf.get('PEM_KEY')
-    }
+	oauth : {
+            email: nconf.get('GOAUTHEMAIL'),
+            key: nconf.get('PEM_KEY')
+	}
 
-}, function sheetReady(err, spreadsheet) {
-    if (err) {
-        throw err;
-    }
-    accountingSheet = spreadsheet;
+    }, function sheetReady(err, spreadsheet) {
+	if (err) {
+            throw err;
+	}
+	accountingSheet = spreadsheet;
+	if (callback) {
+	    callback();
+	}
+    });
+}
+spreadsheetLoad();
 
-    // access the accounting sheet repeatedly, so the access token is kept fresh
-    setInterval( function() {
-	accountingSheet.receive(function(err, rows, info) {
-            if (err) {
-		throw err;
-            }
-	});
-    },
-     5 * 60 * 1000    // every 15 minutes
-    );
-});
 var updateSpreadsheet = function(accounting) {
     accountingSheet.receive(function(err, rows, info) {
         if (err) {
@@ -317,7 +313,8 @@ var createMessage = function(tx) {
 		      'unspendable': approx.unspendable.count,
 		      'fee': fee
 		     };
-    updateSpreadsheet(accounting);
+    var doUpdate = function() { updateSpreadsheet(accounting); }
+    spreadsheetLoad(doUpdate);
 
     var subject = "Vending Machine Transaction"
 
