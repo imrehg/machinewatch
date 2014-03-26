@@ -300,7 +300,8 @@ var createMessage = function(tx) {
     var fee = payoutTx ? ((totalin - totalout) / 1e8) : 0;
     var approxBalance = (approx.spendable.value + approx.unspendable.value) / 1e8;
     var effectiveExchange = multiplier * exchangeRate;
-    effectiveExchange = effectiveExchange.toFixed(4);
+    effectiveExchange = effectiveExchange.toFixed(2);
+    var approxBalanceFiat = approxBalance * effectiveExchange;
     var accounting = {'date': time,
 		      'tx': tx.hash,
 		      'balanceChange': balanceChange,
@@ -321,7 +322,7 @@ var createMessage = function(tx) {
     var html = "<h2>Info</h2><ul><li>Time: "+time+"</li>";
     html += "<li>Transaction: <a href=http://blockchain.info/tx/"+tx.hash+">"+tx.hash+"</a></li>";
     html += "<li>Balance change (BTC): "+balanceChange+"</li>";
-    html += "<li>Balance change (BTC, approx): "+approxBalance+"</li>";
+    html += "<li>Balance (BTC, approx): "+approxBalance+" (~"+approxBalanceFiat+")</li>";
     html += "<li>Effective exchange rate (TWD/BTC): "+effectiveExchange+"</li>";
     html += "<li>Expected fiat (TWD): "+fiatout+"</li>";
     html += "<li>Coins (spendable/unspendable): "+approx.spendable.count+"/"+approx.unspendable.count+"</li>";
