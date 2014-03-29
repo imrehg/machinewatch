@@ -302,6 +302,7 @@ var createMessage = function(tx) {
     var effectiveExchange = multiplier * exchangeRate;
     effectiveExchange = effectiveExchange.toFixed(2);
     var approxBalanceFiat = approxBalance * effectiveExchange;
+    approxBalanceFiat = approxBalanceFiat.toFixed(2);
     var accounting = {'date': time,
 		      'tx': tx.hash,
 		      'balanceChange': balanceChange,
