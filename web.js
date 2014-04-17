@@ -25,8 +25,11 @@ nconf.defaults({
     'BITCOINADDRESS': '1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp',
     'SPREADSHEET': '',
     'GOAUTHEMAIL': '',
-    'PEM_KEY': ''
+    'PEM_KEY': '',
+    'DEBUG': true
 });
+
+DEBUG = nconf.get('DEBUG');
 
 // Email settings
 var nodemailer = require("nodemailer");
@@ -187,6 +190,9 @@ var updateSpreadsheet = function(accounting) {
 				   accounting.spendable,
 				   accounting.unspendable
 				  ]];
+	if (DEBUG) {
+	    console.log(nextData[info.nextRow]);
+	}
     	accountingSheet.add(nextData);
     	accountingSheet.send(function(err, rows, info) {
             if (err) {
@@ -283,6 +289,9 @@ var createMessage = function(tx) {
     }
     if ((myin == 0) && (myout == 0)) {
 	return;  // not our transaction
+    }
+    if (DEBUG) {
+	console.log(tx);
     }
     // was it a pay-in or pay-out?
     var payoutTx = false;  // pay in
