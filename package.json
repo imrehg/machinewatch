@@ -7,16 +7,16 @@
     "email": "gergely@imreh.net"
   },
   "dependencies": {
-    "express": "~3.4.8",
-    "nodemailer": "~0.6.1",
-    "ws": "~0.4.31",
-    "ejs": "~0.8.5",
-    "request": "~2.34.0",
-    "cheerio": "~0.13.1",
-    "moment": "~2.5.1",
+    "cheerio": "^0.13.1",
+    "edit-google-spreadsheet": "^0.2.13",
+    "ejs": "^0.8.8",
+    "express": "^3.18.2",
+    "moment": "^2.8.3",
     "moment-timezone": "0.0.3",
     "nconf": "~0.6.9",
-    "edit-google-spreadsheet": "~0.2.4"
+    "nodemailer": "^0.6.5",
+    "request": "^2.47.0",
+    "ws": "^0.4.32"
   },
   "engines": {
     "node": "0.10.x",
