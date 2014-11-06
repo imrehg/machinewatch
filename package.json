@@ -6,6 +6,13 @@
     "name": "Gergely Imreh",
     "email": "gergely@imreh.net"
   },
+  "bugs" : {
+    "url" : "http://github.com/imrehg/machinewatch/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imrehg/machinewatch.git"
+  },
   "dependencies": {
     "cheerio": "^0.13.1",
     "edit-google-spreadsheet": "^0.2.13",
@@ -21,5 +28,6 @@
   "engines": {
     "node": "0.10.x",
     "npm": "1.2.x"
-  }
+  },
+  "license": "MIT"
 }
