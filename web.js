@@ -376,8 +376,8 @@ server.listen(port, function() {
   console.log("Listening on " + port);
 });
 
-# Debug restart 1x a day
+// Debug restart 1x a day
 new CronJob('00 30 9,23 * * *', function(){
-  # Restart this process
+  // Restart this process
   process.exit(0);
 }, null, true, "Asia/Taipei");
