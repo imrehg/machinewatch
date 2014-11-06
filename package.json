@@ -6,8 +6,8 @@
     "name": "Gergely Imreh",
     "email": "gergely@imreh.net"
   },
-  "bugs" : {
-    "url" : "http://github.com/imrehg/machinewatch/issues"
+  "bugs": {
+    "url": "http://github.com/imrehg/machinewatch/issues"
   },
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "cheerio": "^0.13.1",
+    "cron": "^1.0.5",
     "edit-google-spreadsheet": "^0.2.13",
     "ejs": "^0.8.8",
     "express": "^3.18.2",

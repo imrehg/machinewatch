@@ -7,6 +7,7 @@ var express = require('express')
   , fs = require('fs')
   , nconf = require('nconf')
   , Spreadsheet = require('edit-google-spreadsheet')
+  , CronJob = require('cron').CronJob;
 ;
 
 // Load configuration
@@ -375,3 +376,8 @@ server.listen(port, function() {
   console.log("Listening on " + port);
 });
 
+# Debug restart 1x a day
+new CronJob('00 30 9,23 * * *', function(){
+  # Restart this process
+  process.exit(0);
+}, null, true, "Asia/Taipei");
