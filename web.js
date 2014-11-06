@@ -238,6 +238,8 @@ ws.on('message', function(data, flags) {
 	getUnspent(bitcoinAddress);
     } else if (message.op === "utx") {
 	handleNewTransaction(message.x);
+    } else if (message.op === "status") {
+	console.log("Status message: "+message.msg);
     } else {
     	console.log("Unknown!");
     	console.log(message);
