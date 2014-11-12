@@ -217,6 +217,10 @@ ws.on('open', function() {
 //    ws.send(ws_unconfirmed_sub);
     ws.send(ws_addr_sub);
 });
+ws.on('close', function() {
+    console.log('disconnected');
+    process.exit(0);  // force a restart
+});
 
 var doPing = function() {
     ws.ping();
