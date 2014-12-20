@@ -214,6 +214,7 @@ var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
 var ws;
 var ws_reconnectInterval = 1000 * 30;  // 30 seconds;
 var ws_connect = function(){
+    var pinging;
 
     var ws = new WebSocket('wss://ws.blockchain.info/inv');
     ws.on('open', function() {
@@ -221,16 +222,24 @@ var ws_connect = function(){
 	ws.send(ws_ping_block);
 	ws.send(ws_block_sub);
 	ws.send(ws_addr_sub);
+	pinging = setInterval(doPing, 2*60*1000); // send a ping every 2 minutes, try to keep websocket alive
     });
 
     ws.on('close', function() {
 	console.log('disconnected');
+	clearInterval(pinging);
 	setTimeout(ws_connect, ws_reconnectInterval);
     });
 
     ws.on('pong', function(data, flags) {
-	console.log("PONG!");
+	if (DEBUG) {
+	    console.log("PONG!");
+	}
     });
+
+    doPing = function() {
+	ws.ping();
+    };
 
     ws.on('message', function(data, flags) {
 	try {
