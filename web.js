@@ -225,7 +225,7 @@ var ws_connect = function(){
 
     ws.on('close', function() {
 	console.log('disconnected');
-	setTimeout(connect, ws_reconnectInterval);
+	setTimeout(ws_connect, ws_reconnectInterval);
     });
 
     ws.on('pong', function(data, flags) {
