@@ -212,7 +212,7 @@ var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
 
 // Reconnecting WebSocket
 var ws;
-var ws_reconnectInterval = 1000 * 30;  // 30 seconds;
+var ws_reconnectInterval = 1000 * 15;  // 15 seconds;
 var ws_connect = function(){
     var pinging;
 
@@ -222,7 +222,7 @@ var ws_connect = function(){
 	ws.send(ws_ping_block);
 	ws.send(ws_block_sub);
 	ws.send(ws_addr_sub);
-	pinging = setInterval(doPing, 2*60*1000); // send a ping every 2 minutes, try to keep websocket alive
+	pinging = setInterval(doPing, 1*60*1000); // send a ping every 1 minute, try to keep websocket alive
     });
 
     ws.on('close', function() {
