@@ -209,46 +209,50 @@ var ws_block_sub = JSON.stringify({"op":"blocks_sub"});
 var ws_addr_sub = JSON.stringify({"op":"addr_sub", "addr": bitcoinAddress.getAddress() });
 console.log(ws_addr_sub);
 var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
-var ws = new WebSocket('wss://ws.blockchain.info/inv');
-ws.on('open', function() {
-    console.log("Websocket opened");
-    ws.send(ws_ping_block);
-    ws.send(ws_block_sub);
-//    ws.send(ws_unconfirmed_sub);
-    ws.send(ws_addr_sub);
-});
-ws.on('close', function() {
-    console.log('disconnected');
-    process.exit(0);  // force a restart
-});
 
-var doPing = function() {
-    ws.ping();
+// Reconnecting WebSocket
+var ws;
+var ws_reconnectInterval = 1000 * 60;  // 1 minute;
+var ws_connect = function(){
+
+    var ws = new WebSocket('wss://ws.blockchain.info/inv');
+    ws.on('open', function() {
+	console.log("Websocket opened");
+	ws.send(ws_ping_block);
+	ws.send(ws_block_sub);
+	ws.send(ws_addr_sub);
+    });
+
+    ws.on('close', function() {
+	console.log('disconnected');
+	setTimeout(connect, ws_reconnectInterval);
+    });
+
+    ws.on('pong', function(data, flags) {
+	console.log("PONG!");
+    });
+
+    ws.on('message', function(data, flags) {
+	try {
+	    var message = JSON.parse(data);
+	} catch (e) {
+	    console.log(e);
+	    return;
+	}
+	if (message.op === "block") {
+	    console.log("Got a block! Height: "+message.x.height);
+	    getUnspent(bitcoinAddress);
+	} else if (message.op === "utx") {
+	    handleNewTransaction(message.x);
+	} else if (message.op === "status") {
+	    console.log("Status message: "+message.msg);
+	} else {
+	    console.log("Unknown!");
+	    console.log(message);
+	}
+    });
 };
-setInterval(doPing, 2.5*60*1000); // send a ping every 2.5 minutes, try to keep websocket alive
-ws.on('pong', function(data, flags) {
-    console.log("PONG!");
-});
-
-ws.on('message', function(data, flags) {
-    try {
-	var message = JSON.parse(data);
-    } catch (e) {
-	console.log(e);
-	return;
-    }
-    if (message.op === "block") {
-	console.log("Got a block! Height: "+message.x.height);
-	getUnspent(bitcoinAddress);
-    } else if (message.op === "utx") {
-	handleNewTransaction(message.x);
-    } else if (message.op === "status") {
-	console.log("Status message: "+message.msg);
-    } else {
-    	console.log("Unknown!");
-    	console.log(message);
-    }
-});
+ws_connect();
 
 var handleNewTransaction = function (tx) {
     var message = createMessage(tx);
