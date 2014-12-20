@@ -212,7 +212,7 @@ var ws_unconfirmed_sub = JSON.stringify({"op":"unconfirmed_sub"});
 
 // Reconnecting WebSocket
 var ws;
-var ws_reconnectInterval = 1000 * 60;  // 1 minute;
+var ws_reconnectInterval = 1000 * 30;  // 30 seconds;
 var ws_connect = function(){
 
     var ws = new WebSocket('wss://ws.blockchain.info/inv');
